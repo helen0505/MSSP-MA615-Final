@@ -1,0 +1,310 @@
+---
+title: "MA615_final"
+author: "Hanzhang Song"
+date: "`r Sys.Date()`"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup,include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse) 
+library(scales) 
+library(stringr) 
+library(ggthemes)
+library(readr)
+library(ggplot2)
+library(dplyr)
+```
+
+
+# Loading data
+Since we are looking at MBTA data from November 2021 to October 2022, the data sets we need are 4th quarter in 2021 and the latest provided from 3rd quarter in 2022, for both light rail lines(Green) and heavy rail lines(Blue, Orange, and Red). It ended up with eight data sets.
+```{r oct22,include=FALSE}
+setwd("~/Desktop/BU/MSSP/MA 615/Final")
+# Loading data
+LRQ4_21 <- read_csv("LRTravelTimesQ4_21.csv")
+HRQ4_21 <- read_csv("HRTravelTimesQ4_21.csv")
+
+LRQ1_22 <- read_csv("2022-Q1_LRTravelTimes.csv")
+HRQ1_22 <- read_csv("2022-Q1_HRTravelTimes.csv")
+
+LRQ2_22 <- read_csv("2022-Q2_LRTravelTimes.csv")
+HRQ2_22 <- read_csv("2022-Q2_HRTravelTimes.csv")
+
+LRQ3_22 <- read_csv("2022-Q3_LRTravelTimes.csv")
+HRQ3_22 <- read_csv("2022-Q3_HRTravelTimes.csv")
+```
+
+
+# Sorting by week
+Then, before selecting weeks, I assigned week numbers according to dates.
+```{r,echo=FALSE}
+# Sort by week
+LRQ4_21 <- LRQ4_21 %>% 
+  mutate(week = cut.Date(service_date, breaks = "1 week", labels = FALSE)) %>% 
+  arrange(service_date)
+HRQ4_21 <- HRQ4_21 %>% 
+  mutate(week = cut.Date(service_date, breaks = "1 week", labels = FALSE)) %>% 
+  arrange(service_date)
+
+LRQ1_22 <- LRQ1_22 %>% 
+  mutate(week = cut.Date(service_date, breaks = "1 week", labels = FALSE)) %>% 
+  arrange(service_date)
+HRQ1_22 <- HRQ1_22 %>% 
+  mutate(week = cut.Date(service_date, breaks = "1 week", labels = FALSE)) %>% 
+  arrange(service_date)
+
+LRQ2_22 <- LRQ2_22 %>% 
+  mutate(week = cut.Date(service_date, breaks = "1 week", labels = FALSE)) %>% 
+  arrange(service_date)
+HRQ2_22 <- HRQ2_22 %>% 
+  mutate(week = cut.Date(service_date, breaks = "1 week", labels = FALSE)) %>% 
+  arrange(service_date)
+
+LRQ3_22 <- LRQ3_22 %>% 
+  mutate(week = cut.Date(service_date, breaks = "1 week", labels = FALSE)) %>% 
+  arrange(service_date)
+HRQ3_22 <- HRQ3_22 %>% 
+  mutate(week = cut.Date(service_date, breaks = "1 week", labels = FALSE)) %>% 
+  arrange(service_date)
+```
+
+
+# Selecting weeks
+Now, we can select weeks randomly from 11/21 to 10/22. Twelve weeks are needed in total from 8 data sets.
+```{r,echo=FALSE}
+# Selecting weeks from 11/21 to 10/22
+set.seed(615)
+LRQ4_21 <- LRQ4_21 %>%
+  filter(week >= 6)
+wk1_2 <- sample(unique(LRQ4_21$week),2)
+wk3 <- sample(unique(HRQ4_21$week),1)
+wk4_5 <- sample(unique(LRQ1_22$week),2)
+wk6_7 <- sample(unique(HRQ1_22$week),2)
+wk8 <- sample(unique(LRQ2_22$week),1)
+wk9 <- sample(unique(HRQ2_22$week),1)
+wk10 <- sample(unique(LRQ3_22$week),1)
+wk11_12 <- sample(unique(HRQ3_22$week),2)
+```
+
+
+# Extracting data
+After having week numbers, we can extract them from the data:
+```{r,echo=FALSE}
+# week 1 and 2
+LQ4_21 <- LRQ4_21 %>%
+  filter(week == 8 | week == 14)
+
+# week 3
+HQ4_21 <- HRQ4_21 %>%
+  filter(week == 14)
+
+# week 4 and 5
+LQ1_22 <- LRQ1_22 %>%
+  filter(week == 2 | week == 6)
+
+# week 6 and 7
+HQ1_22 <- HRQ1_22 %>%
+  filter(week == 3 | week == 13)
+
+# week 8
+LQ2_22 <- LRQ2_22 %>%
+  filter(week == 7)
+
+# week 9
+HQ2_22 <- HRQ2_22 %>%
+  filter(week == 13)
+
+# week 10
+LQ3_22 <- LRQ3_22 %>%
+  filter(week == 14)
+
+# week 11 and 12
+HQ3_22 <- HRQ3_22 %>%
+  filter(week == 9 | week == 13)
+```
+
+
+# EDA
+I'm curious about how travel times differ between routes, and if they are also different for light and heavy rails. 
+
+## Light rails in 2021 4th quarter
+```{r,echo=FALSE}
+# Average Travel Time in seconds
+avg_tbl1 <- LQ4_21 %>% 
+  group_by(route_id) %>% 
+  summarise(mean_travel_time = mean(travel_time_sec))
+avg_tbl1
+
+# ggplot
+ggplot(LQ4_21, aes(x=route_id, y=travel_time_sec, fill=route_id)) +
+  geom_bar(position = "dodge",
+           stat = "summary",
+           fun = "mean") +
+  scale_fill_manual(values=c("#708d6e",
+                             "#708557",
+                             "#386b43",
+                             "#424e3d",
+                             "#70a156"))
+```
+According to the plots, Green-D had the longest travel time of more than 1000 seconds on average from origin stop to destination stop, converting to approximately 17 minutes. All lines ran more than 10 minutes from origin to destination.
+
+## Heavy rails in 2021 4th quarter
+```{r,echo=FALSE}
+# Average Travel Time in seconds
+avg_tbl2 <- HQ4_21 %>% 
+  group_by(route_id) %>% 
+  summarise(mean_travel_time = mean(travel_time_sec))
+avg_tbl2
+
+# ggplot
+ggplot(HQ4_21, aes(x=route_id, y=travel_time_sec,fill=route_id)) +
+  geom_bar(position = "dodge",
+           stat = "summary",
+           fun = "mean") + 
+  scale_fill_manual(values=c("#71BBEA",
+                             "orange",
+                             "#F04550"))
+```
+Red line had the longest travel time. It took about 931 seconds(15.5 minutes) travelling from origin to destination. The shortest lines, Blue line, needed 463 seconds(7.71 minutes) to ran the whole ride.
+
+## Light Rails in 2022 1st quarter
+```{r,echo=FALSE}
+# Average Travel Time in seconds
+avg_tbl3 <- LQ1_22 %>% 
+  group_by(route_id) %>% 
+  summarise(mean_travel_time = mean(travel_time_sec))
+avg_tbl3
+
+# ggplot
+ggplot(LQ1_22, aes(x=route_id, y=travel_time_sec, fill=route_id)) +
+  geom_bar(position = "dodge",
+           stat = "summary",
+           fun = "mean") +
+  scale_fill_manual(values=c("#708d6e",
+                             "#708557",
+                             "#386b43",
+                             "#424e3d",
+                             "#70a156"))
+```
+We can see that Green-C and Green-D had close frequencies, but their travel time vary a lot. Green-C needed 623 seconds(10.38 minutes) and Green-D needed 997 seconds(16.62 minutes) to ran the whole ride. Noticeably, the journeys were longer in 2021 4th quarter. The reason could be weather or temperature since it took longer if there was snow in winter.
+
+## Heavy Rails in 2022 1st quarter
+```{r,echo=FALSE}
+# Average Travel Time in seconds
+avg_tbl4 <- HQ1_22 %>% 
+  group_by(route_id) %>% 
+  summarise(mean_travel_time = mean(travel_time_sec))
+avg_tbl4
+
+# ggplot
+ggplot(HQ1_22, aes(x=route_id, y=travel_time_sec, fill=route_id)) +
+  geom_bar(position = "dodge",
+           stat = "summary",
+           fun = "mean") +
+  scale_fill_manual(values=c("#71BBEA",
+                             "orange",
+                             "#F04550"))
+```
+Comparing with 2021 4th quarter, Red Line was still the most common and longest line. However, unlike light rails, the traveling time increased for all lines. 
+
+## Light Rails in 2022 2nd quarter
+```{r,echo=FALSE}
+# Average Travel Time in seconds
+avg_tbl5 <- LQ2_22 %>% 
+  group_by(route_id) %>% 
+  summarise(mean_travel_time = mean(travel_time_sec))
+avg_tbl5
+
+# ggplot
+ggplot(LQ2_22, aes(x=route_id, y=travel_time_sec, fill=route_id)) +
+  geom_bar(position = "dodge",
+           stat = "summary",
+           fun = "mean") +
+  scale_fill_manual(values=c("#708d6e",
+                             "#708557",
+                             "#386b43",
+                             "#424e3d",
+                             "#70a156"))
+```
+The average travel time was longer in this quarter than last for light rails, so my earlier prediction of weather might not be the case.
+
+## Heavy Rails in 2022 2nd quarter
+```{r,echo=FALSE}
+# Average Travel Time in seconds
+avg_tbl6 <- HQ2_22 %>% 
+  group_by(route_id) %>% 
+  summarise(mean_travel_time = mean(travel_time_sec))
+avg_tbl6
+
+# ggplot
+ggplot(HQ2_22, aes(x=route_id, y=travel_time_sec, fill=route_id)) +
+  geom_bar(position = "dodge",
+           stat = "summary",
+           fun = "mean") +
+  scale_fill_manual(values=c("#71BBEA",
+                             "orange",
+                             "#F04550"))
+```
+For heavy rails, only Blue line had longer travel time in 2022 2nd quarter. 
+
+## Light Rails in 2022 3rd quarter
+```{r,echo=FALSE}
+# Average Travel Time in seconds
+avg_tbl7 <- LQ3_22 %>% 
+  group_by(route_id) %>% 
+  summarise(mean_travel_time = mean(travel_time_sec))
+avg_tbl7
+
+# ggplot
+ggplot(LQ3_22, aes(x=route_id, y=travel_time_sec, fill=route_id)) +
+  geom_bar(position = "dodge",
+           stat = "summary",
+           fun = "mean") +
+  scale_fill_manual(values=c("#708d6e",
+                             "#708557",
+                             "#386b43",
+                             "#424e3d",
+                             "#70a156"))
+```
+Moving to the year of 2nd quarter in 2022, all Green lines had steadily grown except D line dropped a lot, from 997 seconds to 457 seconds(9 minutes). Green-D had also became the least common line in this quarter.
+
+## Heavy Rails in 2022 3rd quarter
+```{r,echo=FALSE}
+# Average Travel Time in seconds
+avg_tbl8 <- HQ3_22 %>% 
+  group_by(route_id) %>% 
+  summarise(mean_travel_time = mean(travel_time_sec))
+avg_tbl8
+
+# ggplot
+ggplot(HQ3_22, aes(x=route_id, y=travel_time_sec,fill=route_id)) +
+  geom_bar(position = "dodge",
+           stat = "summary",
+           fun = "mean") + 
+  scale_fill_manual(values=c("#71BBEA",
+                             "orange",
+                             "#F04550"))
+```
+Orange and Red lines had very close travel times this quarter, only a 20-second difference was observed.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
