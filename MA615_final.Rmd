@@ -22,7 +22,6 @@ library(dplyr)
 # Loading data
 Since we are looking at MBTA data from November 2021 to October 2022, the data sets we need are 4th quarter in 2021 and the latest provided from 3rd quarter in 2022, for both light rail lines(Green) and heavy rail lines(Blue, Orange, and Red). It ended up with eight data sets.
 ```{r oct22,include=FALSE}
-setwd("~/Desktop/BU/MSSP/MA 615/Final")
 # Loading data
 LRQ4_21 <- read_csv("LRTravelTimesQ4_21.csv")
 HRQ4_21 <- read_csv("HRTravelTimesQ4_21.csv")
